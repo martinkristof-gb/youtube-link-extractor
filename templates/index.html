@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Link Extractor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(135deg, #1a1c2c 0%, #4a192c 100%);
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-input {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .glass-input:focus {
+            outline: none;
+            border-color: #ec4899;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        }
+
+        .btn-glow {
+            background: linear-gradient(90deg, #ec4899, #8b5cf6);
+            transition: all 0.3s ease;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.5);
+        }
+
+        .card-hover:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.01);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1c2c;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a192c;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ec4899;
+        }
+    </style>
+</head>
+
+<body class="flex items-center justify-center p-4">
+
+    <div class="w-full max-w-4xl glass rounded-2xl shadow-2xl overflow-hidden p-8 space-y-8 animate-fade-in-up">
+
+        <header class="text-center space-y-2">
+            <h1 class="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-400 to-purple-400">
+                YouTube Link Extractor
+            </h1>
+            <p class="text-gray-400 text-sm">Extract and organize links from video descriptions instantly.</p>
+        </header>
+
+        <div class="space-y-4">
+            <div class="relative group">
+                <input type="text" id="videoUrl" placeholder="Paste YouTube Video URL here..."
+                    class="w-full p-4 rounded-xl glass-input text-lg placeholder-gray-500 text-white transition-all duration-300">
+                <div
+                    class="absolute inset-0 rounded-xl bg-gradient-to-r from-pink-500 to-purple-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none blur-md -z-10">
+                </div>
+            </div>
+
+            <div class="relative group">
+                <input type="password" id="apiKey" placeholder="Gemini API Key (Optional, for AI shortening)"
+                    class="w-full p-4 rounded-xl glass-input text-sm placeholder-gray-500 text-white transition-all duration-300">
+            </div>
+
+            <button onclick="extractLinks()" id="extractBtn"
+                class="w-full py-4 rounded-xl btn-glow text-white font-bold text-lg tracking-wide shadow-lg uppercase">
+                Extract Links
+            </button>
+        </div>
+
+        <div id="loading" class="hidden flex justify-center py-8">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+        </div>
+
+        <div id="results" class="hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-semibold text-white">Extracted Links</h2>
+                <div class="flex gap-4 items-center">
+                    <span id="linkCount" class="text-sm bg-white/10 px-3 py-1 rounded-full text-pink-300">0 Links
+                        Found</span>
+                    <button onclick="copyForAds()"
+                        class="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white text-sm font-semibold transition-colors flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                        </svg>
+                        Copy All
+                    </button>
+                    <button onclick="copyForGAE()"
+                        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        Copy for GAE
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-xl border border-white/10">
+                <table class="w-full text-left text-sm text-gray-400">
+                    <thead class="bg-white/5 text-pink-300 uppercase font-medium">
+                        <tr>
+                            <th scope="col" class="px-6 py-4">Page Title / Description</th>
+                            <th scope="col" class="px-6 py-4">Short Title (Max 25)</th>
+                            <th scope="col" class="px-6 py-4">URL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="linksTableBody" class="divide-y divide-white/10 bg-black/20">
+                        <!-- Rows will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="error" class="hidden p-4 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-center">
+            Something went wrong. Please check the URL and try again.
+        </div>
+
+    </div>
+
+    <script>
+        async function extractLinks() {
+            const urlInput = document.getElementById('videoUrl');
+            const apiKeyInput = document.getElementById('apiKey');
+            const extractBtn = document.getElementById('extractBtn');
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const linksTableBody = document.getElementById('linksTableBody');
+            const errorDiv = document.getElementById('error');
+            const linkCount = document.getElementById('linkCount');
+
+            // Save API key to local storage
+            if (apiKeyInput.value) {
+                localStorage.setItem('gemini_api_key', apiKeyInput.value);
+            }
+
+            // Store results globally for copy function
+            window.lastResults = [];
+
+            // Reset UI
+            results.classList.add('hidden');
+            errorDiv.classList.add('hidden');
+            loading.classList.remove('hidden');
+            extractBtn.disabled = true;
+            extractBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+            try {
+                const response = await fetch('/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: urlInput.value,
+                        api_key: apiKeyInput.value
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to fetch');
+                }
+
+                window.lastResults = data.links;
+                linksTableBody.innerHTML = '';
+
+                if (data.links && data.links.length > 0) {
+                    data.links.forEach(link => {
+                        const row = document.createElement('tr');
+                        row.className = 'hover:bg-white/5 transition-colors';
+
+                        const displayTitle = link.page_title || link.text;
+                        const shortTitle = link.short_title || '';
+
+                        const titleColorClass = shortTitle.length > 25 ? 'text-red-400 font-bold' : 'text-pink-200';
+
+                        row.innerHTML = `
+                            <td class="px-6 py-4 font-medium text-white">${displayTitle}</td>
+                            <td class="px-6 py-4 ${titleColorClass} font-mono text-xs">${shortTitle}</td>
+                            <td class="px-6 py-4 text-blue-400 font-mono break-all">
+                                <a href="${link.url}" target="_blank" class="hover:underline">${link.url}</a>
+                            </td>
+                        `;
+                        linksTableBody.appendChild(row);
+                    });
+
+                    linkCount.textContent = `${data.links.length} Links Found`;
+                    results.classList.remove('hidden');
+                } else {
+                    linkCount.textContent = '0 Links Found';
+                    results.classList.remove('hidden');
+                    linksTableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500">No links found in the description.</td></tr>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                errorDiv.textContent = err.message;
+                errorDiv.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+                extractBtn.disabled = false;
+                extractBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        function copyForAds() {
+            if (!window.lastResults || window.lastResults.length === 0) return;
+
+            // Format: Title [TAB] Short Title [TAB] URL
+            const textToCopy = window.lastResults.map(link => {
+                const title = link.page_title || link.text;
+                const shortTitle = link.short_title || '';
+                return `${title}\t${shortTitle}\t${link.url}`;
+            }).join('\n');
+
+            copyToClipboard(textToCopy, 'copyForAds');
+        }
+
+        function copyForGAE() {
+            if (!window.lastResults || window.lastResults.length === 0) return;
+
+            // Header line
+            let textToCopy = "Link Text\tFinal URL\n";
+
+            // Rows: Short Title [TAB] URL
+            textToCopy += window.lastResults.map(link => {
+                const shortTitle = link.short_title || '';
+                return `${shortTitle}\t${link.url}`;
+            }).join('\n');
+
+            copyToClipboard(textToCopy, 'copyForGAE');
+        }
+
+        function copyToClipboard(text, btnFunctionName) {
+            navigator.clipboard.writeText(text).then(() => {
+                // Find button by onclick attribute to support multiple buttons
+                const btn = document.querySelector(`button[onclick="${btnFunctionName}()"]`);
+                const originalText = btn.innerText; // Use innerText to keep it simple, or store html
+                const originalHTML = btn.innerHTML;
+
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg> Copied!`;
+
+                // Color change logic could be specific, but let's just make it generic green pulse
+                const originalClasses = [...btn.classList];
+                btn.classList.remove('bg-green-600', 'bg-blue-600', 'hover:bg-green-500', 'hover:bg-blue-500');
+                btn.classList.add('bg-green-500');
+
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    // Restore classes logic is a bit tricky if we stripped them.
+                    // Simplest is to just reload page or be specific.
+                    // Let's just hardcode the restoration based on function name for safety.
+                    btn.className = originalClasses.join(' ');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy to clipboard.');
+            });
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('videoUrl').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                extractLinks();
+            }
+        });
+
+        // Load API Key
+        const savedKey = localStorage.getItem('gemini_api_key');
+        if (savedKey) {
+            document.getElementById('apiKey').value = savedKey;
+        }
+    </script>
+</body>
+
+</html>
