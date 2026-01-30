@@ -101,56 +101,31 @@ def extract():
         return jsonify({'error': 'No URL provided'}), 400
 
     try:
-        # Fetch the YouTube page
-        # Note: We are scraping the HTML. This might be brittle if YouTube changes layout.
-        # Ideally we'd use the API, but that requires an API key. 
-        # Alternatively, we could use yt-dlp, but let's try requests first for simplicity.
-        # We need headers to look like a browser.
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9',
+        # Use yt-dlp to extract metadata - much more robust against blocking
+        import yt_dlp
+
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'skip_download': True,
+            'extract_flat': True, # Faster, but might miss full description sometimes. 
+            # If extract_flat doesn't give full description, we might need to remove it. 
+            # But let's try to be fast first.
         }
-        response = requests.get(video_url, headers=headers)
-        response.encoding = 'utf-8' # Ensure UTF-8 decoding
-        response.raise_for_status()
-        html = response.text
         
-        # Extract title
-        title_match = re.search(r'<title>(.*?)</title>', html)
-        video_title = title_match.group(1).replace(' - YouTube', '') if title_match else 'Unknown Video'
-        
-        # Extract description. 
-        # Meta tag: <meta name="description" content="...">
-        description = ""
-        desc_match = re.search(r'<meta name="description" content="(.*?)">', html)
-        if desc_match:
-            description = desc_match.group(1)
-        
-        # If meta description is truncated or missing, try to find the initial data JSON
-        # This is optional but good for robustness.
-        if not description or len(description) < 50:
-             # Basic attempt to find fuller description in JSON
-             # This is a bit complex regex, keeping it simple for now with meta tag
-             # as it often contains the first few lines where links are.
-             pass
-             
-        # Actually proper full description is often in "ytInitialData"
-        # Let's try a robust fallback if meta is empty, but for now let's see.
-        # The meta description often replaces newlines with spaces or just truncates.
-        # A better way for full description without yt-dlp is looking for "shortDescription" in the HTML source
-        # which is usually inside the player response.
-        
-        # Search for "shortDescription" in the text
-        # pattern: "shortDescription":"..."
-        # But it's json encoded.
-        
-        json_desc_match = re.search(r'"shortDescription":"(.*?)"', html)
-        if json_desc_match:
-            # Decode unicode escapes
-            raw_desc = json_desc_match.group(1)
-            # Python's string request might have escaped it.
-            # Convert literal \n to actual newlines
-            description = raw_desc.replace('\\n', '\n').encode().decode('unicode-escape') # simple unescape
+        # We need full description, so extract_flat might be too "flat".
+        # Let's try without extract_flat but with skip_download
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'skip_download': True,
+        }
+
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # yt-dlp can handle the extraction
+            info = ydl.extract_info(video_url, download=False)
+            video_title = info.get('title', 'Unknown Video')
+            description = info.get('description', '')
         
         links = extract_links_with_text(description)
         
