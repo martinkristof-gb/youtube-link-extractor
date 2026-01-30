@@ -115,19 +115,19 @@ def extract():
         
         # We need full description, so extract_flat might be too "flat".
         # Let's try without extract_flat but with skip_download
-        # Workaround for "Sign in to confirm you’re not a bot": Use authenticated-like client (Android)
+        # Workaround for "Sign in to confirm you’re not a bot": Use authenticated-like client (iOS)
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
             'skip_download': True,
             'extractor_args': {
                 'youtube': {
-                    'player_client': ['android', 'web'],
+                    'player_client': ['ios'],
                     'player_skip': ['webpage', 'configs', 'js'], 
                 }
             },
             'http_headers': {
-                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+                'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
             }
         }
 
