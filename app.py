@@ -115,10 +115,20 @@ def extract():
         
         # We need full description, so extract_flat might be too "flat".
         # Let's try without extract_flat but with skip_download
+        # Workaround for "Sign in to confirm you’re not a bot": Use authenticated-like client (Android)
         ydl_opts = {
             'quiet': True,
             'no_warnings': True,
             'skip_download': True,
+            'extractor_args': {
+                'youtube': {
+                    'player_client': ['android', 'web'],
+                    'player_skip': ['webpage', 'configs', 'js'], 
+                }
+            },
+            'http_headers': {
+                'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36',
+            }
         }
 
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
